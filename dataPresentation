@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />   
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensor Data Log</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+        }
+        #dataList {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        li {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            font-family: 'Courier New', monospace;
+        }
+        li:last-child {
+            border-bottom: none;
+        }
+        li:hover {
+            background-color: #f9f9f9;
+        }
+        .error {
+            color: red;
+            padding: 10px;
+            background: #ffe6e6;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sensor Data Log</h1>
+    <button onclick="loadData()">Refresh Data</button>
+    <div id="dataList">Loading...</div>
+
+    <script>
+        function loadData() {
+            fetch('sensor-data.log')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load data');
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    const lines = data.trim().split('\n').filter(line => line.length > 0);
+                    
+                    if (lines.length === 0) {
+                        document.getElementById('dataList').innerHTML = '<p>No data available</p>';
+                        return;
+                    }
+                    
+                    // Reverse to show newest first
+                    lines.reverse();
+                    
+                    const ul = document.createElement('ul');
+                    lines.forEach(line => {
+                        const li = document.createElement('li');
+                        li.textContent = line;
+                        ul.appendChild(li);
+                    });
+                    
+                    document.getElementById('dataList').innerHTML = '';
+                    document.getElementById('dataList').appendChild(ul);
+                })
+                .catch(error => {
+                    document.getElementById('dataList').innerHTML = 
+                        `<div class="error">Error loading data: ${error.message}</div>`;
+                });
+        }
+
+        // Load data on page load
+        loadData();
+
+        // Auto-refresh every 30 seconds
+        setInterval(loadData, 15000);
+    </script>
+</body>
+</html>

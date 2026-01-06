@@ -1,0 +1,56 @@
+<?php
+header('Content-Type: text/plain');
+
+define('LOG_FILE', 'sensor-data.log');
+define('MAX_ENTRIES', 100);
+
+if (http_response_code() > 0){
+    echo http_response_code();
+}
+
+
+// Check request method
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo "Error: Only POST requests are allowed";
+    exit;
+}
+
+// Validate input exists
+if (!isset($_POST['temperature']) || !isset($_POST['humidity'])) {
+    http_response_code(400);
+    echo "Error: Missing temperature or humidity";
+    exit;
+}
+
+// Validate and sanitize data
+$temperature = filter_var($_POST['temperature'], FILTER_VALIDATE_FLOAT);
+$humidity = filter_var($_POST['humidity'], FILTER_VALIDATE_FLOAT);
+
+if ($temperature === false || $humidity === false) {
+    http_response_code(400);
+    echo "Error: Invalid data format";
+    exit;
+}
+
+
+// Create timestamp and format data
+$timestamp = date('d-m-Y H:i:s');
+$newData = sprintf("%s, %.2f, %.2f\n", $timestamp, $temperature, $humidity);
+
+// Save data to log file
+if (file_exists(LOG_FILE)) {
+    $lines = file(LOG_FILE, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    
+    // Keep only last 99 entries
+    if (count($lines) >= MAX_ENTRIES) {
+        $lines = array_slice($lines, -(MAX_ENTRIES - 1));
+    }
+    
+    $lines[] = trim($newData);
+    file_put_contents(LOG_FILE, implode("\n", $lines) . "\n", LOCK_EX);
+} else {
+    file_put_contents(LOG_FILE, $newData, LOCK_EX);
+}
+
+?>
